@@ -25,6 +25,8 @@ class DownloadActivity extends TypedActivity {
    */
   class DownloadFragment extends Fragment {
     import TypedResource._
+
+    // Implicit conversion that lets us use anonymous functions as onClickListeners
     implicit def onClickListener(f: (View => Unit)): View.OnClickListener = {
       new View.OnClickListener() {
         override def onClick(v: View) {
@@ -37,11 +39,12 @@ class DownloadActivity extends TypedActivity {
     // available when the class is initialized.
     var progressBar: Option[ProgressBar] = None
     var downloadProgressTextView: Option[TextView] = None
+
     val system = getApplication().asInstanceOf[DownloadApplication].actorSystem
     val downloadButtonActor = system.actorOf(Props[DownloadButton]().withDispatcher("akka.actor.main-thread"))
     val resetButtonActor = system.actorOf(Props[ResetButton].withDispatcher("akka.actor.main-thread"))
     val fragmentCompanion = system.actorOf(Props(new DownloadFragmentActor()).withDispatcher("akka.actor.main-thread"))
-    val downloader = system.actorOf(Props(new Downloader()), "downloader") // Not unique?
+    val downloader = system.actorOf(Props(new Downloader()), "downloader")
 
     override def onCreateView(inflater: LayoutInflater, container: ViewGroup, savedInstanceState: Bundle): View = {
       setRetainInstance(true)
@@ -73,7 +76,7 @@ class DownloadActivity extends TypedActivity {
             progress.getLoadedBytes, progress.getTotalBytes)))
         }
         case DownloadFinishedEvent => {
-
+          // Nothing that we need to do
         }
         case TriggerStartDownloadEvent => {
           downloader ! StartDownload(findView(TR.urlEditText).getText.toString)

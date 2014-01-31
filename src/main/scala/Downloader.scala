@@ -6,12 +6,16 @@ import java.io.{InputStream, FileOutputStream, File}
 import java.net.{URL, HttpURLConnection}
 import scala.concurrent.{Future, Promise, ExecutionContext}
 
-
+// Downloader messages
 case class StartDownload(url: String)
 case object ResetEvent
 case object PauseEvent
 case object ResumeEvent
 
+/**
+ * Downloader actor
+ *
+ */
 class Downloader extends Actor {
   var reportListener: Option[ActorRef] = None
   @volatile var running = true
@@ -35,9 +39,7 @@ class Downloader extends Actor {
 
   def download(url: String) = {
     implicit val ec = context.system.dispatcher
-    val promise = Promise[Boolean]()
-
-    promise.completeWith(Future {
+    Future {
       try {
         var totalSize: Long = 0
         var loadedSize: Long = 0
@@ -80,8 +82,6 @@ class Downloader extends Actor {
       }
       context.become(awaitingDownload)
       true
-    })
-
-    promise.future
+    }
   }
 }
