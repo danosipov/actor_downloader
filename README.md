@@ -27,7 +27,7 @@ $ cd android-plugin
 $ sbt publish-local
 ```
 
-This will create plugin of version 0.7.1-SNAPSHOT. You can now go back to android_actors and run:
+This will create plugin of version 0.7.1-SNAPSHOT. You can now go back to actor_downloader and run:
 
 ```
 $ sbt start
