@@ -80,8 +80,15 @@ class Downloader extends Actor {
       } catch {
         case e: Exception => e.printStackTrace()
       }
-      context.become(awaitingDownload)
+      resetState()
       true
     }
+  }
+
+  def resetState() {
+    reportListener = None
+    running = true
+    killed = false
+    context.become(awaitingDownload)
   }
 }

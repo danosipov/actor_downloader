@@ -68,13 +68,7 @@ class DownloadActivity extends TypedActivity {
 
     class DownloadFragmentActor extends Actor {
       def receive = {
-        case progress: DownloadProgressEvent => {
-          // View elements are wrapped in an Option, so foreach will
-          // apply only to ones that are not None/null.
-          progressBar foreach (_.setProgress(progress.getProgress))
-          downloadProgressTextView foreach (_.setText(String.format("%s / %s",
-            progress.getLoadedBytes, progress.getTotalBytes)))
-        }
+        case event: DownloadProgressEvent => updateProgress(event)
         case DownloadFinishedEvent => {
           // Nothing that we need to do
         }
@@ -83,6 +77,19 @@ class DownloadActivity extends TypedActivity {
         }
         case TriggerPauseDownloadEvent => downloader ! PauseEvent
         case TriggerResumeDownloadEvent => downloader ! ResumeEvent
+        case TriggerResetDownloadEvent => {
+          updateProgress(DownloadProgressEvent(0, 0))
+          downloadButtonActor ! ResetButtonState(findView(TR.downloadButton))
+          downloader ! ResetEvent
+        }
+      }
+
+      def updateProgress(progress: DownloadProgressEvent) {
+        // View elements are wrapped in an Option, so foreach will
+        // apply only to ones that are not None/null.
+        progressBar foreach (_.setProgress(progress.getProgress))
+        downloadProgressTextView foreach (_.setText(String.format("%s / %s",
+          progress.getLoadedBytes, progress.getTotalBytes)))
       }
     }
   }
@@ -93,7 +100,9 @@ case object DownloadFinishedEvent
 case object TriggerStartDownloadEvent
 case object TriggerPauseDownloadEvent
 case object TriggerResumeDownloadEvent
+case object TriggerResetDownloadEvent
 case class RestoreButtonState(v: Button)
+case class ResetButtonState(v: Button)
 case class DownloadProgressEvent(loaded: Long, total: Long) {
   def getProgress: Int = {
     ((loaded * 100).toDouble / total).toInt
@@ -132,6 +141,7 @@ class DownloadButton extends Actor with ActorLogging {
       context.become(pause)
     }
     case RestoreButtonState(v: Button) => v.setText("Download")
+    case ResetButtonState(v: Button) => performReset(v)
   }
 
   val pause: Receive = {
@@ -141,6 +151,7 @@ class DownloadButton extends Actor with ActorLogging {
       context.become(resume)
     }
     case RestoreButtonState(v: Button) => v.setText("Pause")
+    case ResetButtonState(v: Button) => performReset(v)
   }
 
   val resume: Receive = {
@@ -150,11 +161,20 @@ class DownloadButton extends Actor with ActorLogging {
       context.become(pause)
     }
     case RestoreButtonState(v: Button) => v.setText("Resume")
+    case ResetButtonState(v: Button) => performReset(v)
+  }
+
+  def performReset(v: Button) {
+    v.setText("Download")
+    context.become(download)
   }
 }
 
 class ResetButton extends Actor with ActorLogging {
   def receive = {
-    case ClickEvent(v: View) => println("Download Button Clicked")
+    case ClickEvent(v: View) => {
+      sender ! TriggerResetDownloadEvent
+
+    }
   }
 }
